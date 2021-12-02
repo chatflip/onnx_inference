@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "onnx_inference_using_opencv"
+name = "onnx_inference"
 version = "0.1.0"
 description = ""
 authors = ["chatflip <oo.chat.flip@gmail.com>"]
@@ -8,10 +8,11 @@ authors = ["chatflip <oo.chat.flip@gmail.com>"]
 python = "^3.7,<3.11"
 torch = "^1.9.1"
 torchvision = "^0.10.1"
-opencv-python = "^4.5.4"
+opencv-python = ">=4.5.0,<4.6.0"
 onnx = "^1.10.2"
-onnx-simplifier = "^0.3.6"
 onnxruntime = "^1.9.0"
+onnx-simplifier = "^0.3.6"
+openvino-dev = ">=2021.4.2,<2022.0.0"
 
 [tool.poetry.dev-dependencies]
 pysen = "^0.10"
