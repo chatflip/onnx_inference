@@ -2,6 +2,7 @@ import os
 
 import cv2
 import numpy as np
+import onnx
 import onnxruntime as ort
 import torch
 import torchvision.models as models
@@ -11,9 +12,10 @@ class SegmentationModel:
     def __init__(self) -> None:
         self.image_width = 640
         self.image_height = 640
-        self.onnx_root = "./../onnx_models"
+        self.onnx_root = "./../models/onnx"
         self.onnx_name = "deeplabv3_mobilenet_v3_large_voc.onnx"
         self.person_label = 15
+        os.makedirs(self.onnx_root, exist_ok=True)
 
     def setup_model(self, backend="pytorch"):
         if backend == "pytorch":
@@ -61,7 +63,7 @@ class SegmentationModel:
             is_person = np.where(index == self.person_label, 1, 0).astype(int)
             color = np.array([[0, 0, 0], [0, 0, 255]], dtype=np.uint8)
             color_result = cv2.resize(
-                color[is_person], (width, height), cv2.INTER_NEAREST
+                color[is_person], (width, height), interpolation=cv2.INTER_NEAREST
             )
             visualize = cv2.addWeighted(image, 0.5, color_result, 0.5, 1.0)
             return visualize
@@ -70,7 +72,24 @@ class SegmentationModel:
             is_person = np.where(index == self.person_label, 1, 0).astype(int)
             color = np.array([[0, 0, 0], [0, 0, 255]], dtype=np.uint8)
             color_result = cv2.resize(
-                color[is_person], (width, height), cv2.INTER_NEAREST
+                color[is_person], (width, height), interpolation=cv2.INTER_NEAREST
             )
             visualize = cv2.addWeighted(image, 0.5, color_result, 0.5, 1.0)
             return visualize
+
+    def convert_onnx(self):
+        dummy_input = torch.randn(1, 3, self.image_height, self.image_width)
+        dst_path = os.path.join(self.onnx_root, self.onnx_name)
+        torch.onnx.export(
+            self.setup_model("pytorch"),
+            dummy_input,
+            dst_path,
+            verbose=False,
+            export_params=True,
+            do_constant_folding=True,
+            input_names=["input"],
+            output_names=["output"],
+            opset_version=13,
+        )
+        onnx_model = onnx.load(dst_path)
+        onnx.checker.check_model(onnx_model)

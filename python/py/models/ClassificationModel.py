@@ -2,6 +2,7 @@ import os
 
 import cv2
 import numpy as np
+import onnx
 import onnxruntime as ort
 import torch
 import torchvision.models as models
@@ -13,7 +14,7 @@ class ClassificationModel:
     def __init__(self) -> None:
         self.image_width = 224
         self.image_height = 224
-        self.onnx_root = "./../onnx_models"
+        self.onnx_root = "./../models/onnx"
         self.onnx_name = "mobilenet_v2_imagenet.onnx"
         self.mean = np.array([0.485, 0.456, 0.406])
         self.std = np.array([0.229, 0.224, 0.225])
@@ -81,6 +82,23 @@ class ClassificationModel:
                 image, predict, (20, 20), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255)
             )
             return image
+
+    def convert_onnx(self):
+        dummy_input = torch.randn(1, 3, self.image_height, self.image_width)
+        dst_path = os.path.join(self.onnx_root, self.onnx_name)
+        torch.onnx.export(
+            self.setup_model("pytorch"),
+            dummy_input,
+            dst_path,
+            verbose=False,
+            export_params=True,
+            do_constant_folding=True,
+            input_names=["input"],
+            output_names=["output"],
+            opset_version=13,
+        )
+        onnx_model = onnx.load(dst_path)
+        onnx.checker.check_model(onnx_model)
 
     def get_label(self):
         return [

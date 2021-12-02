@@ -7,8 +7,8 @@ import models
 
 
 def conf():
-    parser = argparse.ArgumentParser(description="mbg")
-    parser.add_argument("--model_type", type=str, default="classification")
+    parser = argparse.ArgumentParser(description="inference")
+    parser.add_argument("--model_type", type=str, default="segmentation")
     parser.add_argument("--backend", type=str, default="onnx")
     args = parser.parse_args()
     return args

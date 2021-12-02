@@ -7,7 +7,7 @@ import models
 
 
 def conf():
-    parser = argparse.ArgumentParser(description="mbg")
+    parser = argparse.ArgumentParser(description="inference")
     parser.add_argument("--model_type", type=str, default="segmentation")
     parser.add_argument("--backend", type=str, default="onnx")
     parser.add_argument("--camera_width", type=int, default=1280)
