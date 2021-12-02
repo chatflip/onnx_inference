@@ -15,6 +15,7 @@ def main():
     print(args)
     model = models.get_model(args.model_type)
     model.convert_onnx()
+    model.convert_openvino()
 
 
 if __name__ == "__main__":

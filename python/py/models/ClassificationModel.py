@@ -1,4 +1,5 @@
 import os
+import subprocess
 
 import cv2
 import numpy as np
@@ -6,6 +7,8 @@ import onnx
 import onnxruntime as ort
 import torch
 import torchvision.models as models
+from onnxsim import simplify
+from openvino.inference_engine.ie_api import IECore
 from PIL import Image
 from torchvision import transforms
 
@@ -16,6 +19,8 @@ class ClassificationModel:
         self.image_height = 224
         self.onnx_root = "./../models/onnx"
         self.onnx_name = "mobilenet_v2_imagenet.onnx"
+        self.openvino_root = "./../models/openvino"
+        self.openvino_name = "mobilenet_v2_imagenet"
         self.mean = np.array([0.485, 0.456, 0.406])
         self.std = np.array([0.229, 0.224, 0.225])
         raw_label = self.get_label()
@@ -30,6 +35,16 @@ class ClassificationModel:
         elif backend == "onnx":
             onnx_path = os.path.join(self.onnx_root, self.onnx_name)
             return ort.InferenceSession(onnx_path)
+        elif backend == "openvino":
+            xml_path = os.path.join(
+                self.openvino_root, self.openvino_name, f"{self.openvino_name}.xml"
+            )
+            bin_path = os.path.join(
+                self.openvino_root, self.openvino_name, f"{self.openvino_name}.bin"
+            )
+            ie = IECore()
+            model = ie.read_network(model=xml_path, weights=bin_path)
+            return ie.load_network(network=model, device_name="CPU", num_requests=0)
 
     def preprocess(self, image, backend="pytorch"):
         if backend == "pytorch":
@@ -46,7 +61,7 @@ class ClassificationModel:
                 ]
             )
             return transform(pil_image).unsqueeze(0)
-        elif backend == "opencv" or backend == "onnx":
+        elif backend == "opencv" or backend == "onnx" or backend == "openvino":
             image = cv2.resize(image, (self.image_width, self.image_height))
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             tensor = image.astype(np.float32) / 255.0
@@ -66,6 +81,8 @@ class ClassificationModel:
             input_name = model.get_inputs()[0].name
             output_name = model.get_outputs()[0].name
             return model.run([output_name], {input_name: tensor})
+        elif backend == "openvino":
+            return model.infer(inputs={"input": tensor})["output"]
 
     def postprocess(self, image, output, backend="pytorch"):
         if backend == "pytorch":
@@ -75,7 +92,7 @@ class ClassificationModel:
                 image, predict, (20, 20), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255)
             )
             return image
-        elif backend == "opencv" or backend == "onnx":
+        elif backend == "opencv" or backend == "onnx" or backend == "openvino":
             index = np.squeeze(output).argmax()
             predict = self.label[index]
             cv2.putText(
@@ -95,10 +112,28 @@ class ClassificationModel:
             do_constant_folding=True,
             input_names=["input"],
             output_names=["output"],
-            opset_version=13,
+            opset_version=12,
         )
+        model_simp, check = simplify(dst_path)
+        assert check, "Simplified ONNX model could not be validated"
+        onnx.save(model_simp, dst_path)
         onnx_model = onnx.load(dst_path)
         onnx.checker.check_model(onnx_model)
+
+    def convert_openvino(self):
+        dst_path = os.path.join(self.onnx_root, self.onnx_name)
+        cmd = [
+            "mo",
+            "--input_model",
+            dst_path,
+            "--input_shape",
+            f"[1,3,{self.image_height},{self.image_width}]",
+            "--output_dir",
+            os.path.join(self.openvino_root, self.openvino_name),
+            "--data_type",
+            "FP32",
+        ]
+        subprocess.run(cmd)
 
     def get_label(self):
         return [
