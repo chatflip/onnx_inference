@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# classification
+# segmentation
 #python py/convert.py
 # pytorch 
 #python py/demo_image.py --backend pytorch

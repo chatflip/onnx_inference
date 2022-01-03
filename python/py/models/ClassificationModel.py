@@ -25,6 +25,7 @@ class ClassificationModel:
         self.std = np.array([0.229, 0.224, 0.225])
         raw_label = self.get_label()
         self.label = [l[10:].replace("\n", "") for l in raw_label]
+        self.force_cpu = True
 
     def setup_model(self, backend="pytorch"):
         if backend == "pytorch":
@@ -34,7 +35,20 @@ class ClassificationModel:
             return cv2.dnn.readNetFromONNX(onnx_path)
         elif backend == "onnx":
             onnx_path = os.path.join(self.onnx_root, self.onnx_name)
-            return ort.InferenceSession(onnx_path)
+            providers = [
+                (
+                    "CUDAExecutionProvider",
+                    {
+                        "device_id": 0,
+                        "cuda_mem_limit": 4 * 1024 * 1024 * 1024,
+                        "cudnn_conv_algo_search": "EXHAUSTIVE",
+                    },
+                ),
+                "CPUExecutionProvider",
+            ]
+            if self.force_cpu:
+                providers.pop(0)
+            return ort.InferenceSession(onnx_path, providers=providers)
         elif backend == "openvino":
             xml_path = os.path.join(
                 self.openvino_root, self.openvino_name, f"{self.openvino_name}.xml"

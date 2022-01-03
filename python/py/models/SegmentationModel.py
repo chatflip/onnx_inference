@@ -20,6 +20,7 @@ class SegmentationModel:
         self.openvino_root = "./../models/openvino"
         self.openvino_name = "deeplabv3_mobilenet_v3_large_voc"
         self.person_label = 15
+        self.force_cpu = True
         os.makedirs(self.onnx_root, exist_ok=True)
         os.makedirs(self.openvino_root, exist_ok=True)
 
@@ -33,7 +34,20 @@ class SegmentationModel:
             return cv2.dnn.readNetFromONNX(onnx_path)
         elif backend == "onnx":
             onnx_path = os.path.join(self.onnx_root, self.onnx_name)
-            return ort.InferenceSession(onnx_path)
+            providers = [
+                (
+                    "CUDAExecutionProvider",
+                    {
+                        "device_id": 0,
+                        "cuda_mem_limit": 4 * 1024 * 1024 * 1024,
+                        "cudnn_conv_algo_search": "EXHAUSTIVE",
+                    },
+                ),
+                "CPUExecutionProvider",
+            ]
+            if self.force_cpu:
+                providers.pop(0)
+            return ort.InferenceSession(onnx_path, providers=providers)
         elif backend == "openvino":
             xml_path = os.path.join(
                 self.openvino_root, self.openvino_name, f"{self.openvino_name}.xml"
