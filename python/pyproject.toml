@@ -5,22 +5,22 @@ description = ""
 authors = ["chatflip <oo.chat.flip@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.7,<3.11"
-torch = "^1.9.1"
-torchvision = "^0.10.1"
+python = "^3.8,<3.11"
+torch = "^1.11.0"
+torchvision = "^0.12.0"
 opencv-python = ">=4.5.0,<4.6.0"
-onnx = "^1.10.2"
-onnxruntime = "^1.9.0"
-onnx-simplifier = "^0.3.6"
-openvino-dev = ">=2021.4.2,<2022.0.0"
+onnx = "^1.11.0,<2.0.0"
+onnxruntime-gpu = "^1.11.0,<2.0.0"
+onnx-simplifier = "^0.3.7"
 
 [tool.poetry.dev-dependencies]
 pysen = "^0.10"
-black = "=21.10b0"
-flake8 = "=4.0.1"
-isort = "=5.10.1"
-mypy = "=0.910"
+black = "21.10b0"
+flake8 = "4.0.1"
+isort = "5.10.1"
+mypy = "0.910"
 autopep8 = "*"
+click = "8.0.2"
 
 [tool.pysen]
 version = "0.10"
