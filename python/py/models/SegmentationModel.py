@@ -13,14 +13,11 @@ class SegmentationModel:
     def __init__(self) -> None:
         self.image_width = 640
         self.image_height = 640
-        self.onnx_root = "./../models/onnx"
+        self.onnx_root = os.path.join(".", "..","models", "onnx")
         self.onnx_name = "deeplabv3_mobilenet_v3_large_voc.onnx"
-        self.openvino_root = "./../models/openvino"
-        self.openvino_name = "deeplabv3_mobilenet_v3_large_voc"
-        self.tensorrt_cache = "./../models/tensorrt"
+        self.tensorrt_cache = os.path.join(".", "..","models", "tensorrt")
         self.person_label = 15
         os.makedirs(self.onnx_root, exist_ok=True)
-        os.makedirs(self.openvino_root, exist_ok=True)
 
     def setup_model(self, backend="pytorch"):
         if backend == "pytorch":

@@ -19,7 +19,7 @@ def main():
     args = conf()
     print(args)
     model_info = models.get_model(args.model_type)
-    image_path = os.path.join("./../images", "test_image.jpg")
+    image_path = os.path.join(".", "..", "images", "test_image.jpg")
     if not os.path.exists(image_path):
         print(f"no such file: {image_path}")
     image = cv2.imread(image_path)
