@@ -25,7 +25,8 @@ poetry install
 |              | onnx-tensorrt | 15.86          | 0.51    |
 |              | onnx-gpu      | 24.58          | 0.33    |
 |              | onnx-cpu      | 65.96          | 0.12    |
-| Windows 10   | pytorch       |                |         |
-|              | onnx-tensorrt |                |         |
-|              | onnx-gpu      |                |         |
-|              | onnx-cpu      |                |         |
+| Windows 10   | pytorch-gpu   | 14.56          | 1.0     |
+|              | pytorch-cpu   | 251.28         | 0.06    |
+|              | onnx-tensorrt | 17.64          | 0.83    |
+|              | onnx-gpu      | 26.69          | 0.55    |
+|              | onnx-cpu      | 72.29          | 0.20    |
