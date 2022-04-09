@@ -1,4 +1,5 @@
 import os
+from turtle import back
 
 import cv2
 import numpy as np
@@ -13,17 +14,21 @@ class SegmentationModel:
     def __init__(self) -> None:
         self.image_width = 640
         self.image_height = 640
-        self.onnx_root = os.path.join(".", "..","models", "onnx")
+        self.onnx_root = os.path.join(".", "..", "models", "onnx")
         self.onnx_name = "deeplabv3_mobilenet_v3_large_voc.onnx"
-        self.tensorrt_cache = os.path.join(".", "..","models", "tensorrt")
+        self.tensorrt_cache = os.path.join(".", "..", "models", "tensorrt")
         self.person_label = 15
         os.makedirs(self.onnx_root, exist_ok=True)
 
     def setup_model(self, backend="pytorch"):
-        if backend == "pytorch":
-            return models.segmentation.deeplabv3_mobilenet_v3_large(
+        if "pytorch" in backend:
+            inference_device = "cuda" if backend == "pytorch-gpu" else "cpu"
+            self.device = torch.device(inference_device)
+            model = models.segmentation.deeplabv3_mobilenet_v3_large(
                 pretrained=True
             ).eval()
+            model.to(self.device)
+            return model
         elif backend == "onnx-tensorrt":
             onnx_path = os.path.join(self.onnx_root, self.onnx_name)
             providers = [
@@ -58,10 +63,11 @@ class SegmentationModel:
             return ort.InferenceSession(onnx_path, providers=providers)
 
     def preprocess(self, image, backend="pytorch"):
-        if backend == "pytorch":
+        if "pytorch" in backend:
             image = cv2.resize(image, (self.image_width, self.image_height))
             tensor = torch.as_tensor(image, dtype=torch.float) / 255.0
             tensor = tensor.permute(2, 0, 1).unsqueeze(0)
+            tensor = tensor.to(self.device)
             return tensor
         elif "onnx" in backend:
             image = cv2.resize(image, (self.image_width, self.image_height))
@@ -71,9 +77,11 @@ class SegmentationModel:
             return tensor
 
     def inference(self, model, tensor, backend="pytorch"):
-        if backend == "pytorch":
+        if "pytorch" in backend:
+            torch.cuda.synchronize()
             with torch.inference_mode():
                 output = model(tensor)["out"].squeeze(0)
+            torch.cuda.synchronize()
             return output
         elif "onnx" in backend:
             input_name = model.get_inputs()[0].name
@@ -82,8 +90,8 @@ class SegmentationModel:
 
     def postprocess(self, image, output, backend="pytorch"):
         height, width = image.shape[:2]
-        if backend == "pytorch":
-            index = output.squeeze().argmax(0).numpy()
+        if "pytorch" in backend:
+            index = output.squeeze().argmax(0).cpu().numpy()
             is_person = np.where(index == self.person_label, 1, 0).astype(int)
             color = np.array([[0, 0, 0], [0, 0, 255]], dtype=np.uint8)
             color_result = cv2.resize(
